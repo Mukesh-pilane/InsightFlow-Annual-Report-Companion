@@ -10,24 +10,14 @@ const Sidebar = ({handlePdfChange, selectedFile}) => {
       <PdfUpload onPdfChange={handlePdfChange} seleltedFile={selectedFile}/>
  
       <ul>
-        <li className="mb-2">
+        <li className="m-2">
           <a
             href="annual-report-2022-2023.pdf"
             className="hover:underline"
             target="_blank"
             rel="noopener noreferrer"
           >
-            annual-report-2022-2023.pdf
-          </a>
-        </li>
-        <li className="mb-2">
-          <a
-            href="div-class-title-evaluating-word-em.html"
-            className="hover:underline"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            div-class-title-evaluating-word-em.html
+            {selectedFile?.name}
           </a>
         </li>
       </ul>
