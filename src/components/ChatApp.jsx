@@ -21,8 +21,8 @@ const Chat = ({ selectedFile }) => {
         ...prevMessages,
         { text: userInput, type: "user" },
       ]);
-      const response = await axios.post(
-        "https://4d27-34-124-187-42.ngrok-free.app/api/generate",
+      const response = await axios.post( // here I have to pase url till /api/generate
+        "https://774f-34-143-143-177.ngrok-free.app//api/generate", 
         { message: userInput, file: selectedFile.name }
       );
       setMessages((prevMessages) => [

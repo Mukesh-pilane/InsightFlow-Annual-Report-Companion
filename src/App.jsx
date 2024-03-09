@@ -8,7 +8,7 @@ const App = () => {
   
   const [selectedFile, setSelectedFile] = useState(null);
   // const [pdfFile, setPdfFile] = useState('annual-report-2022-2023.pdf');
-  const apiUrl = `https://4d27-34-124-187-42.ngrok-free.app/`+"api/upload";
+  const apiUrl = `http://774f-34-143-143-177.ngrok-free.app/`+"api/upload";  // here I have to pase url till /api/generate
   
   const handlePdfChange = (file) => {
     setSelectedFile(file);
