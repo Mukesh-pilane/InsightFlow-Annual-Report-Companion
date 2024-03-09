@@ -1,7 +1,7 @@
-from langchain_community.llms import Replicate
+from langchain.chains import LLMChain
+from langchain_community.llms import GradientLLM
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
-
 
 
 class Loadllm:
@@ -10,20 +10,15 @@ class Loadllm:
         callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
         # Prepare the LLM
 
-        llm = Replicate(
-            model="a16z-infra/llama13b-v2-chat:df7690f1994d94e96ad9d568eac121aecf50684a0b0963b25a41cc40061269e5",
-            model_kwargs={"temperature": 0.75, "max_length": 3000},
-            callback_manager=callback_manager,
-        )  
-        
-        # LlamaCpp(
-        #     model_path=model_path,
-        #     n_gpu_layers=40,
-        #     n_batch=512,
-        #     n_ctx=2048,
-        #     f16_kv=True,  # MUST set to True, otherwise you will run into problem after a couple of calls
-        #     callback_manager=callback_manager,
-        #     verbose=True,
-        # )
+        llm = GradientLLM(
+            # `ID` listed in `$ gradient model list`
+            model="6fd9d674-c159-418f-98d7-689af2b11715_model_adapter",
+            # # optional: set new credentials, they default to environment variables
+            # gradient_workspace_id=os.environ["GRADIENT_WORKSPACE_ID"],
+            # gradient_access_token=os.environ["GRADIENT_ACCESS_TOKEN"],
+            model_kwargs=dict(max_generated_token_count=400,temperature= 0.75, max_length= 3000, Stream=True),
+            # callback_manager= callback_manager,
+            callbacks=[StreamingStdOutCallbackHandler()]
+        )
 
         return llm

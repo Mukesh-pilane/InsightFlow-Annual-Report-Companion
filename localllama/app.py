@@ -31,13 +31,8 @@ llm = Replicate(
     model_kwargs={"temperature": 0.75, "max_length": 3000}
 )  
 
-def pdfTextExtractor(pdf_document):
-    text = ""
-    for page_num in range(pdf_document.page_count):
-        page = pdf_document.load_page(page_num)
-        text += page.get_text("text")
-    text=re.sub(r'\n', ' ', text)
-    pdf_document.close()
+def pdfTextExtractor(pdf_document):>
+    >    pdf_document.close()
     return text
 
 
