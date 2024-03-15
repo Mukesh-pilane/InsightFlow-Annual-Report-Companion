@@ -1,46 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import PDFViewer from './components/PDFViewer';
-import Chat from './components/ChatApp';
+import React from 'react';
+import Chat from './components/Chat';
 import Sidebar from './components/SideBar';
-import axios from "axios" 
-const App = () => {
- 
-  
-  const [selectedFile, setSelectedFile] = useState(null);
-  // const [pdfFile, setPdfFile] = useState('annual-report-2022-2023.pdf');
-  const apiUrl = `http://774f-34-143-143-177.ngrok-free.app/`+"api/upload";  // here I have to pase url till /api/generate
-  
-  const handlePdfChange = (file) => {
-    setSelectedFile(file);
-    console.log(file);
-    const formData = new FormData();
-      formData.append('file', file);
-      console.log(formData);
-      axios.post(apiUrl, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        }
-      })
-      .then(response => {
-        // Handle the successful response
-        console.log(response.data)
-        return response.data;
-      })
-      .catch(error => {
-        // Handle any errors that occur during the request
-        console.log(error);
-      });
+import Layout from './components/Layout';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Home from './components/Home';
 
-    };
+const NotFound = () => {
+  return (
+    <div>
+      Not Found
+    </div>
+  )
+}
+
+const App = () => {
+
+
 
 
   return (
-    <main className="mx-auto grid h-[100vh] w-[100vw] md:grid-cols-[20%_40%_40%]">
-
-      <Sidebar handlePdfChange={handlePdfChange} selectedFile={selectedFile}/>
-      <PDFViewer pdfFile={selectedFile} />
-      <Chat selectedFile={selectedFile}/>
-    </main>
+    <>
+      <Layout>
+        <Sidebar />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/chat/:id" element={<Chat />} />
+        </Routes>
+      </Layout>
+    </>
   );
 };
 
