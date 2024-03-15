@@ -16,6 +16,11 @@ import os
 import pickle
 from loadllm import Loadllm
 from langchain_core.prompts import ChatPromptTemplate
+from langchain.document_loaders import PyMuPDFLoader
+from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate
+from tempfile import gettempdir
+
 
 app = FastAPI()
 
@@ -43,6 +48,25 @@ def open_pdf_from_url(pdf_url):
         return pdf_document
     except Exception as e:
         print(f"Error: {e}")
+
+def download_file(url, dest_folder=None):
+    if dest_folder is None:
+        dest_folder = gettempdir()
+
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        # Extracting safe file name from the URL
+        file_name = os.path.join(dest_folder, "temp.pdf")
+        
+        # Saving the file to the temporary folder
+        with open(file_name, 'wb') as file:
+            file.write(response.content)
+            return file_name        
+    else:
+        print(f"Failed to download file. Status code: {response.status_code}")
+
+
 def pdfTextExtractor(pdf_document):
     text = ""
     for page_num in range(pdf_document.page_count):
@@ -60,7 +84,15 @@ Question: {question}
 Answer:
 """
 
-embeddings = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
+graphtemplate = """Question: {question}
+
+Answer: """
+
+prompt = PromptTemplate.from_template(template)
+
+graphPrompt = PromptTemplate.from_template(template)
+
+embeddings = HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2')
 
 @app.get("/")
 def read_root():
@@ -71,16 +103,14 @@ def read_root():
 async def upload_file(data: dict):
     store_name = data["id"]
     url = data["url"]
-    pdf_document = open_pdf_from_url(url)
-    text = pdfTextExtractor(pdf_document)
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000, chunk_overlap=200, length_function=len
-    )
-    chunks = text_splitter.split_text(text=text)
+    download_file(url, "temp")
+    loader = PyMuPDFLoader("temp/temp.pdf")
+    pages=loader.load()
+    os.remove("temp/temp.pdf")
     if os.path.exists(f"vectorestore/{store_name}.pkl"):
         return {"detail":"File already exists"}
     else:
-        VectorStore = FAISS.from_texts(chunks, embedding=embeddings)
+        VectorStore = FAISS.from_documents(pages, embedding=embeddings)
         with open(f"vectorestore/{store_name}.pkl", "wb") as f:
             pickle.dump(VectorStore, f)
         return {"message": "File uploaded and stored"}
@@ -93,13 +123,15 @@ async def generate_response(data: dict):
         VectorStore = pickle.load(f)
     
     llm = Loadllm.load_llm()
-    
+    # llm_forgraph = LLMChain(prompt=graphPrompt, llm=llm)
+
     chain = ConversationalRetrievalChain.from_llm(
-        llm, VectorStore.as_retriever(), return_source_documents=True
+        llm, VectorStore.as_retriever(search_kwargs={"k": 2}), return_source_documents=True,combine_docs_chain_kwargs={"prompt": prompt}
     )
     query = data["message"]
     result = chain.invoke({"question": query, "chat_history": chat_history})
-    return JSONResponse(content={"message": result["answer"]})
+    pages = [result["source_documents"][0].metadata["page"]+1,result["source_documents"][1].metadata["page"]+1]
+    return JSONResponse(content={"message": result["answer"], "pages":pages})
 
 
 

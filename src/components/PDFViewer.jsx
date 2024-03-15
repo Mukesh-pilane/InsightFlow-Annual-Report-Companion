@@ -13,9 +13,8 @@ import { vectorizer } from '../utility/llmApi';
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 
-const PDFviewer = () => {
+const PDFviewer = ({ pageNumber, handlePageNumber }) => {
   const [numPages, setNumPages] = useState();
-  const [pageNumber, setPageNumber] = useState(1);
   const { chats } = useChat()
   const location = useLocation();
   const { user } = useAuth();
@@ -25,7 +24,6 @@ const PDFviewer = () => {
     if (chats.length == 0) {
       return
     }
-    console.log(chats.length);
     const currentChat = chats.filter((chat) => {
       return chat.chatId == location.pathname.split("/")[2]
     })
@@ -44,6 +42,7 @@ const PDFviewer = () => {
   }
   useEffect(() => {
     getPdfUrl()
+    handlePageNumber(1)
   }, [user, location, chats])
 
   const file = useMemo(() => {
@@ -76,7 +75,6 @@ const PDFviewer = () => {
   return (
 
     <div className='h-[100vh] p-4 flex flex-col items-center overflow-y-auto'>
-      {/* {console.log(URL.createObjectURL(pdfFile))} */}
       {
         pdfUrl && (
           <>
@@ -94,9 +92,9 @@ const PDFviewer = () => {
             >
 
               {/* {Array.from({ length: numPages }, (_, index) => ( */}
-              <div 
-              // key={`page_${index + 1}`} 
-              className='shadow-lg w-full'>
+              <div
+                // key={`page_${index + 1}`} 
+                className='shadow-lg w-full'>
                 {/* <Page
                     // className="w-[70%]" // Responsive width classes
                     loading={
@@ -106,12 +104,14 @@ const PDFviewer = () => {
                     // height={500}
                     width={470}
                   /> */}
+                {/* ))} */}
+
                 <Page
                   width={400}
-                  pageNumber={1}
+                  loading=""
+                  pageNumber={pageNumber}
                 />
               </div>
-              {/* ))} */}
             </Document>
 
             {/* <div className='flex justify-center w-[50px] mx-auto gap-3'>
