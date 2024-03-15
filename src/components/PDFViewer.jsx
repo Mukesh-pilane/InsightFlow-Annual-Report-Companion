@@ -107,7 +107,7 @@ const PDFviewer = () => {
                     width={470}
                   /> */}
                 <Page
-                  width={400}
+                  width={500}
                   pageNumber={1}
                 />
               </div>
