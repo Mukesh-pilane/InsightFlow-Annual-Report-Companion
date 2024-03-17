@@ -14,7 +14,7 @@ import { useAuth } from '../context/AuthContext';
 
 //lib 
 import { collection, getDocs, doc } from 'firebase/firestore';
-import { db, storage } from '../firebase/firebase.init';
+import { db } from '../firebase/firebase.init';
 import { Link, useLocation } from 'react-router-dom';
 
 
@@ -70,7 +70,7 @@ const Sidebar = () => {
       const loggedInUser = await signInWithGoogle();
       setUser(loggedInUser);
     } catch (error) {
-      console.log('Error signing in with Google:', error.message);
+      console.error('Error signing in with Google:', error.message);
     }
   };
 
@@ -79,7 +79,7 @@ const Sidebar = () => {
       await signOutUser();
       clearUser();
     } catch (error) {
-      console.log('Error signing out:', error.message);
+      console.error('Error signing out:', error.message);
     }
   };
 

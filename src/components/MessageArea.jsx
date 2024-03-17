@@ -4,14 +4,134 @@ import axios from "axios";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase/firebase.init";
-import { addDoc, collection, serverTimestamp, doc, query, orderBy,onSnapshot } from "firebase/firestore";
-const MessageArea = () => {
+import { addDoc, collection, serverTimestamp, doc, query, orderBy, onSnapshot } from "firebase/firestore";
+import { IoCloseSharp } from "react-icons/io5";
+
+const FAQDATA = [
+  {
+    corporate_information: [
+      "What are the company's main products and services?",
+      "Who are the company's key markets and customers?",
+      "Who are the main competitors of the company?",
+      "What are the company's key strategic initiatives for growth?",
+      "What are the major risks and uncertainties facing the company's operations?",
+      "What are the company's commitments to environmental, social, and governance (ESG) initiatives?"
+    ]
+  },
+  {
+    management_communication: [
+      "What is the company's outlook for the coming year?",
+      "What are the company's policies on corporate governance and sustainability?",
+      "What are the company's key performance indicators (KPIs) for measuring success?",
+      "What are the qualifications and experience of the company's board of directors?",
+      "What are the company's plans for share buybacks or other capital allocation initiatives?",
+      "What are the company's dividends policy and share price performance for the year?"
+    ]
+  }
+  ,
+  {
+    statutory_reports: [
+      "What type of audit opinion was issued on the financial statements (unmodified, modified, scope limitation)?",
+      "What does the audit opinion mean and what limitations does it have?",
+      "What were the 'basis for opinion' and 'key audit matters' (if applicable) identified by the auditor?",
+      "Did the auditor identify any significant risks or uncertainties?",
+      "What are the responsibilities of both the company and the auditor regarding the financial statements?"
+    ]
+  }
+  ,
+  {
+    financial_statements: [
+      "What was the company's revenue and profit for the year?",
+      "Did the company meet its financial targets outlined in the previous year's report?",
+      "What are the main factors that impacted the company's financial performance?",
+      "What are the key risks and uncertainties facing the company's future financial performance?"
+    ]
+  }
+]
+
+const FAQModel = ({ showFAQQuestion, handleShowFAQQuestions, questions, handelSetQuestions, sendMessageToServer }) => {
+  return (
+    <div>
+      <div className=" grid grid-cols-2 gap-2 py-2">
+        <button
+          onClick={() => {
+            handelSetQuestions({
+              type: "corporate_information",
+              questions: FAQDATA[0].corporate_information
+            })
+            handleShowFAQQuestions()
+          }}
+          className={(questions?.type == "corporate_information" ? "bg-accent-500 text-white" : "bg-gray-200 text-black") + " cursor-pointer items-center justify-center rounded-lg  px-2 py-2 "} >
+          Corporate Information
+        </button>
+        <button
+          onClick={() => {
+            handelSetQuestions({
+              type: "management_communication",
+              questions: FAQDATA[1].management_communication
+            })
+            handleShowFAQQuestions()
+          }}
+          className={(questions?.type == "management_communication" ? "bg-accent-500 text-white" : "bg-gray-200 text-black") + " cursor-pointer items-center justify-center rounded-lg  px-2 py-2 "} >
+          Management Communication
+        </button>
+        <button
+          onClick={() => {
+            handelSetQuestions({
+              type: "statutory_reports",
+              questions: FAQDATA[2].statutory_reports
+            })
+            handleShowFAQQuestions()
+          }}
+          className={(questions?.type == "statutory_reports" ? "bg-accent-500 text-white" : "bg-gray-200 text-black") + " cursor-pointer items-center justify-center rounded-lg  px-2 py-2 "} >
+          Statutory Reports
+        </button>
+        <button
+          onClick={() => {
+            handelSetQuestions({
+              type: "financial_statements",
+              questions: FAQDATA[3].financial_statements
+            })
+            handleShowFAQQuestions()
+          }}
+          className={(questions?.type == "financial_statements" ? "bg-accent-500 text-white" : "bg-gray-200 text-black") + " cursor-pointer items-center justify-center rounded-lg  px-2 py-2 "} >
+          Financial Statements
+        </button>
+      </div>
+      <div className="bg-accent-500 text-white p-3 rounded-lg mr-4 items-center">
+        {showFAQQuestion && (
+          questions.questions?.map((question, index) => {
+            return (
+              <span key={index}
+                onClick={()=>{
+                  sendMessageToServer(question)
+                }}
+                className="text-md cursor-pointer">
+                <span className="inline-block items-center mr-1"><IoSend /></span>
+                <span className="">{question}</span>
+                <br />
+              </span>
+            )
+          })
+        )}
+      </div>
+    </div>
+
+  )
+}
+
+const MessageArea = ({ handlePageNumber }) => {
   const [messages, setMessages] = useState([]);
   const [userInput, setUserInput] = useState("");
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
+  const [showFAQ, setShowFAQ] = useState(false);
+  const [showFAQQuestion, setShowFAQQuestion] = useState(false);
+  const [questions, setQuestions] = useState({
+    type: "corporate_information",
+    questions: FAQDATA[0].corporate_information
+  })
   const location = useLocation();
-
   useEffect(() => {
     if (!user) {
       return
@@ -42,36 +162,42 @@ const MessageArea = () => {
 
     // Scroll to the bottom of the message area
     messageArea.scrollTop = messageArea.scrollHeight;
-  }, [messages]);
+  }, [messages, showFAQ, showFAQQuestion, questions]);
 
+  const handelSetQuestions = (data) => {
+    setQuestions(data)
+  }
 
-
+  const handleShowFAQQuestions = () => {
+    setShowFAQQuestion(true);
+  }
   const handleInputChange = (event) => {
     setUserInput(event.target.value);
   };
 
-  const sendMessageToServer = async () => {
+  const sendMessageToServer = async (query) => {
     setLoading(true);
     try {
       setMessages((prevMessages) => [
         ...prevMessages,
-        { user: userInput },
+        { user: query },
       ]);
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/generate`,
-        { message: userInput, id: location.pathname.split("/")[2] }
+        { message: query, id: location.pathname.split("/")[2] }
       );
       const userRef = doc(db, 'users', user.uid);
       const userChatsRef = doc(userRef, 'chats', location.pathname.split("/")[2]);
       const chatMessagesRef = collection(userChatsRef, 'messages')
       await addDoc(chatMessagesRef, {
-        user: userInput,
+        user: query,
         bot: response.data.message,
+        pages: response.data.pages,
         timestamp: serverTimestamp(),
       });
       setMessages((prevMessages) => [
         ...prevMessages,
-        { bot: response.data.message },
+        { bot: response.data.message, pages: response.data.pages },
       ]);
 
       console.log(response);
@@ -85,34 +211,47 @@ const MessageArea = () => {
   const handleSend = (event) => {
     event.preventDefault();
     if (userInput.trim() !== "") {
-      sendMessageToServer();
+      sendMessageToServer(userInput);
       setUserInput("");
     }
   };
+  const handleShowFAQ = () => {
+    setShowFAQ(!showFAQ)
+  }
 
   return (
-    <div className="border border-gray-300 rounded-lg p-5 relative overflow-hidden text-sm[17px]">
+    <div className="border  border-gray-300 rounded-lg p-5 relative overflow-hidden text-sm[17px]">
       <div id="message-area" className="space-y-4 flex-1 h-full overflow-y-auto pb-16 px-">
-        {messages?.map((message) => {
+        {messages?.map((message, index) => {
           return (
-            <>
-                <div className="flex justify-end">
-                  <div className="bg-gray-200 text-gray-800 p-2 rounded-lg ml-4 flex items-center">
-                    <div>
-                      {message.user}
-                    </div>
+            <div key={index} className="space-y-4">
+              <div className="flex justify-end">
+                <div className="bg-gray-200 text-gray-800 p-2 rounded-lg ml-4 flex items-center">
+                  <div>
+                    {message.user}
                   </div>
                 </div>
-                {message.bot &&
+              </div>
+              {message.bot &&
                 <div className="flex justify-start">
                   <div className="bg-accent-500 w-[85%] text-white p-2 rounded-lg mr-4 flex items-center">
-                    <div style={{"white-space": "pre-line"}}>
+                    <div style={{ "whiteSpace": "pre-line" }}>
                       {message.bot}
+                      <div className="flex"> Source:
+                        {message.pages?.map((page, index) => {
+                          return <div
+                            onClick={() => handlePageNumber(page)}
+                            className="cursor-pointer bg-white text-accent-500 rounded-md px-2 mr-2"
+                            key={index}
+                          > {page}
+                          </div>
+                        })}
+                      </div>
                     </div>
                   </div>
                 </div>
-                }
-            </>
+              }
+            </div>
           )
         })}
         {
@@ -124,21 +263,31 @@ const MessageArea = () => {
             </div>
           </div>
         }
-      </div>
+        {
+          showFAQ && <FAQModel showFAQQuestion={showFAQQuestion} handleShowFAQQuestions={handleShowFAQQuestions} questions={questions} handelSetQuestions={handelSetQuestions} sendMessageToServer={sendMessageToServer} />
+        }
 
+      </div>
       <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center justify-center bg-white p-4">
+        <button
+          className="absolute left-5 flex cursor-pointer items-center justify-center rounded-lg bg-accent-500 px-1 py-1 text-white"
+          onClick={handleShowFAQ}
+        >
+          {!showFAQ ? "FAQ" : <IoCloseSharp size={24} />
+          }
+        </button>
         <input
           type="text"
           value={userInput}
           onChange={handleInputChange}
           id="chat"
-          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-l-md focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+          className="bg-gray-50 ring-1 placeholder:pl-0 rounded-lg pl-12 border-gray-300 focus:outline-none outline-none text-gray-900 text-sm  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
           placeholder="Ask Questions"
           required
         />
         <button
           onClick={handleSend}
-          className="flex cursor-pointer items-center justify-center rounded-r-md bg-accent-500 px-5 py-3 text-white"
+          className="absolute right-5 flex cursor-pointer items-center justify-center rounded-lg bg-accent-500 px-3 py-2 text-white"
         >
           <IoSend />
         </button>

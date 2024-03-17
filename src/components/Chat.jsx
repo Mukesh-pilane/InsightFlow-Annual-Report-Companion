@@ -1,14 +1,18 @@
+import { useState } from 'react';
 import MessageArea from './MessageArea'
 import PDFviewer from './PDFViewer'
 
 
 const Chat = () => {
-
+  const [pageNumber, setPageNumber] = useState(1);
+  const handlePageNumber = (pageNumber) =>{
+    setPageNumber(pageNumber)
+  }
 
   return (
     <>
-      <MessageArea />
-      <PDFviewer />
+      <MessageArea  handlePageNumber={handlePageNumber}/>
+      <PDFviewer pageNumber={pageNumber}  handlePageNumber={handlePageNumber}/>
     </>
   )
 }
