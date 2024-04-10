@@ -7,6 +7,7 @@ const Chat = () => {
   const [pageNumber, setPageNumber] = useState(1);
   const handlePageNumber = (pageNumber) =>{
     setPageNumber(pageNumber)
+    console.log(pageNumber);
   }
 
   return (

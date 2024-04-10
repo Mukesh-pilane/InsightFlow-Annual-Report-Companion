@@ -17,7 +17,7 @@ const chatReducer = (state, action) => {
     case SET_CHATS:
       return { ...state, chats: action.payload };
     case ADD_CHAT:
-      return { ...state, chats: [...state.chats, action.payload], loading: false };
+      return { ...state, chats: [...state.chats, action.payload]};
     case SET_LOADING:
       return { ...state, loading: action.payload };
     default:

@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase/firebase.init";
 import { addDoc, collection, serverTimestamp, doc, query, orderBy, onSnapshot } from "firebase/firestore";
 import { IoCloseSharp } from "react-icons/io5";
+import { useChat } from '../context/ChatContext';
 
 const FAQDATA = [
   {
@@ -103,7 +104,7 @@ const FAQModel = ({ showFAQQuestion, handleShowFAQQuestions, questions, handelSe
           questions.questions?.map((question, index) => {
             return (
               <span key={index}
-                onClick={()=>{
+                onClick={() => {
                   sendMessageToServer(question)
                 }}
                 className="text-md cursor-pointer">
@@ -123,7 +124,7 @@ const FAQModel = ({ showFAQQuestion, handleShowFAQQuestions, questions, handelSe
 const MessageArea = ({ handlePageNumber }) => {
   const [messages, setMessages] = useState([]);
   const [userInput, setUserInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [msgLoading, setMsgLoading] = useState(false);
   const { user } = useAuth();
   const [showFAQ, setShowFAQ] = useState(false);
   const [showFAQQuestion, setShowFAQQuestion] = useState(false);
@@ -176,7 +177,7 @@ const MessageArea = ({ handlePageNumber }) => {
   };
 
   const sendMessageToServer = async (query) => {
-    setLoading(true);
+    setMsgLoading(true);
     try {
       setMessages((prevMessages) => [
         ...prevMessages,
@@ -204,7 +205,7 @@ const MessageArea = ({ handlePageNumber }) => {
     } catch (error) {
       console.error("Error sending message to server:", error);
     } finally {
-      setLoading(false);
+      setMsgLoading(false);
     }
   };
 
@@ -225,13 +226,27 @@ const MessageArea = ({ handlePageNumber }) => {
         {messages?.map((message, index) => {
           return (
             <div key={index} className="space-y-4">
-              <div className="flex justify-end">
-                <div className="bg-gray-200 text-gray-800 p-2 rounded-lg ml-4 flex items-center">
-                  <div>
-                    {message.user}
+              {
+                message.intro &&
+                <div className="flex justify-start">
+                  <div className="bg-accent-500 w-[85%] text-white p-2 rounded-lg mr-4 flex items-center">
+                    <div style={{ "whiteSpace": "pre-line" }}>
+                      {message.intro}
+                    </div>
                   </div>
                 </div>
-              </div>
+              }
+              {
+                message.user &&
+
+                <div className="flex justify-end">
+                  <div className="bg-gray-200 text-gray-800 p-2 rounded-lg ml-4 flex items-center">
+                    <div>
+                      {message.user}
+                    </div>
+                  </div>
+                </div>
+              }
               {message.bot &&
                 <div className="flex justify-start">
                   <div className="bg-accent-500 w-[85%] text-white p-2 rounded-lg mr-4 flex items-center">
@@ -255,7 +270,7 @@ const MessageArea = ({ handlePageNumber }) => {
           )
         })}
         {
-          loading && <div className="flex justify-start">
+          msgLoading && <div className="flex justify-start">
             <div className="bg-accent-500 space-x-2 text-white p-2 rounded-lg mr-4 flex items-center">
               <div className='h-3 w-3 bg-white rounded-full animate-bounce [animation-delay:-0.3s]'></div>
               <div className='h-3 w-3 bg-white rounded-full animate-bounce [animation-delay:-0.15s]'></div>

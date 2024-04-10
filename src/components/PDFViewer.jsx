@@ -9,6 +9,10 @@ import { useAuth } from '../context/AuthContext';
 import { useChat } from '../context/ChatContext'
 import { useLocation } from 'react-router-dom';
 import { vectorizer } from '../utility/llmApi';
+import { FaPlus } from "react-icons/fa";
+import { FaMinus } from "react-icons/fa";
+import { GrPowerReset } from "react-icons/gr";
+
 // pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.js';
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
@@ -19,7 +23,7 @@ const PDFviewer = ({ pageNumber, handlePageNumber }) => {
   const location = useLocation();
   const { user } = useAuth();
   const [pdfUrl, setPdfUrl] = useState(null);
-
+  const [zoom, setZoom] = useState(400);
   const getPdfUrl = () => {
     if (chats.length == 0) {
       return
@@ -40,6 +44,23 @@ const PDFviewer = ({ pageNumber, handlePageNumber }) => {
         console.error('Error getting download URL:', error.message);
       });
   }
+
+  const handleZoomIn = () => {
+    if(zoom<=800){
+      setZoom(zoom+100)
+    }
+  }
+
+  const handleZoomOut = () => {
+    if(zoom>400){
+      setZoom(zoom-100)
+    }
+  }
+
+  const ResetZoom = () => {
+    setZoom(400)
+  }
+
   useEffect(() => {
     getPdfUrl()
     handlePageNumber(1)
@@ -63,70 +84,79 @@ const PDFviewer = ({ pageNumber, handlePageNumber }) => {
 
   const goToPreviousPage = () => {
     if (pageNumber > 1) {
-      setPageNumber(pageNumber - 1);
+      handlePageNumber(pageNumber - 1);
     }
   };
 
   const goToNextPage = () => {
     if (pageNumber < numPages) {
-      setPageNumber(pageNumber + 1);
+      handlePageNumber(pageNumber + 1);
     }
   };
   return (
 
-    <div className='h-[100vh] p-4 flex flex-col items-center overflow-y-auto'>
+    <div className='h-[100vh] p-4 flex flex-col  overflow-y-auto'>
+      <div className="py-1 px-4 flex gap-4">
+        <div className="flex items-start">
+          <button onClick={goToPreviousPage}>
+            &#10094;
+          </button>
+          <div>
+            {pageNumber} / {numPages}
+          </div>
+          <button onClick={goToNextPage}>
+            &#10095;
+          </button>
+        </div>
+        <div className="flex space-x-2">
+          <button
+          onClick={handleZoomOut}
+          >
+            <FaMinus />
+          </button>
+          <button
+          onClick={ResetZoom}
+          >
+            <GrPowerReset />
+          </button>
+          <button
+          onClick={handleZoomIn}
+          >
+            <FaPlus />
+          </button>
+        </div>
+      </div>
       {
         pdfUrl && (
           <>
-            <Document
-              file={file}
-              onLoadSuccess={onDocumentLoadSuccess}
-              loading={
-                <div className="h-[100vh] space-x-2 text-white p-2 rounded-lg flex items-center">
-                  <div className='h-3 w-3 bg-accent-500 rounded-full animate-bounce [animation-delay:-0.3s]'></div>
-                  <div className='h-3 w-3 bg-accent-500 rounded-full animate-bounce [animation-delay:-0.15s]'></div>
-                  <div className='h-3 w-3 bg-accent-500 rounded-full animate-bounce'></div>
+            <div className="w-full items-center">
+              <Document
+                file={file}
+                onLoadSuccess={onDocumentLoadSuccess}
+                loading={
+                  <div className="h-[100vh] space-x-2 text-white p-2 rounded-lg flex items-center">
+                    <div className='h-3 w-3 bg-accent-500 rounded-full animate-bounce [animation-delay:-0.3s]'></div>
+                    <div className='h-3 w-3 bg-accent-500 rounded-full animate-bounce [animation-delay:-0.15s]'></div>
+                    <div className='h-3 w-3 bg-accent-500 rounded-full animate-bounce'></div>
+                  </div>
+                }
+                className="space-y-2"
+              >
+
+                <div
+                  className='shadow-lg w-full'>
+
+
+                  <Page
+                    width={zoom}
+                    loading=""
+                    pageNumber={pageNumber}
+                  />
                 </div>
-              }
-              className="space-y-2"
-            >
+              </Document>
 
-              {/* {Array.from({ length: numPages }, (_, index) => ( */}
-              <div
-                // key={`page_${index + 1}`} 
-                className='shadow-lg w-full'>
-                {/* <Page
-                    // className="w-[70%]" // Responsive width classes
-                    loading={
-                      <div class="w-8 h-8 border-4 border-dashed rounded-full animate-spin border-blue-600"></div>
-                    }
-                    key={`page_${index + 1}`} pageNumber={index + 1}
-                    // height={500}
-                    width={470}
-                  /> */}
-                {/* ))} */}
+            </div>
 
-                <Page
-                  width={400}
-                  loading=""
-                  pageNumber={pageNumber}
-                />
-              </div>
-            </Document>
-
-            {/* <div className='flex justify-center w-[50px] mx-auto gap-3'>
-              <button
-                className=" relative mr-auto  w-fit rounded-full bg-dark-500 p-2 py-1 text-white shadow-2xl shadow-dark-500/50"
-                onClick={goToPreviousPage} disabled={pageNumber === 1}>
-                Prev
-              </button>
-              <button
-                className=" relative ml-auto  w-fit rounded-full bg-dark-500 p-2 py-1 text-white shadow-2xl shadow-dark-500/50"
-
-                onClick={goToNextPage} disabled={pageNumber === numPages}>
-                Next
-              </button>
-            </div> */}
           </>
         )
       }

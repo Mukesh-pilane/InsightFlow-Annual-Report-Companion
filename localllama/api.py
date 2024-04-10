@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
+from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 import fitz
 from io import BytesIO
@@ -15,12 +15,11 @@ import requests
 import os
 import pickle
 from loadllm import Loadllm
-from langchain_core.prompts import ChatPromptTemplate
-from langchain.document_loaders import PyMuPDFLoader
+# from langchain_core.prompts import ChatPromptTemplate
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from tempfile import gettempdir
-
+from langchain_core.documents import Document
 
 app = FastAPI()
 
@@ -36,6 +35,7 @@ os.environ["GRADIENT_ACCESS_TOKEN"] = "qmo0P8rEERRVzm0XoEIvm9j41aQEu5Z2"
 os.environ["GRADIENT_WORKSPACE_ID"] = "fde7dc26-fb49-4ba9-9fc3-818e15c189ae_workspace"
 
 chat_history = []
+llm = Loadllm.load_llm()
 
 def open_pdf_from_url(pdf_url):
     try:
@@ -75,6 +75,24 @@ def pdfTextExtractor(pdf_document):
     text = re.sub(r"\n", " ", text)
     pdf_document.close()
     return text
+text_splitter = RecursiveCharacterTextSplitter(
+    # Set a really small chunk size, just to show.
+    chunk_size=800,
+    chunk_overlap=200,
+    length_function=len,
+)
+
+def intro(VectorStore):
+    keyword = ["About","Financial Performance", "Letter of Ceo","Management Discussion"]
+    output=[]
+    for keyword in keyword:
+        doc = VectorStore.similarity_search(keyword, k=1)
+        output.append(doc[0].page_content)
+    return f"""{output[0]}\n
+{output[1]}\n
+{output[2]}\n
+{output[3]}\n
+"""
 
 template = """You are a financial expert with access to the annual report of the company.
 When answering questions about the company's financial performance, prioritize information from the Financial Statements section.Considering the user's question, provide clear and concise answers from given context.
@@ -92,6 +110,14 @@ prompt = PromptTemplate.from_template(template)
 
 graphPrompt = PromptTemplate.from_template(template)
 
+IntroTemplate = """Based on this data:
+{info}
+on the basis of the following report give Overview of the annual report in short
+overview:
+"""
+
+IntroPrompt = PromptTemplate.from_template(IntroTemplate)
+
 embeddings = HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2')
 
 @app.get("/")
@@ -104,36 +130,70 @@ async def upload_file(data: dict):
     store_name = data["id"]
     url = data["url"]
     download_file(url, "temp")
-    loader = PyMuPDFLoader("temp/temp.pdf")
-    pages=loader.load()
+    
+    doc = fitz.open("temp/temp.pdf")
+    pages=[]
+    for page_no in range(doc.page_count):
+        text = doc[page_no].get_text()
+        text = text_splitter.split_text(text=text)
+        for chunk in text:
+            page = Document(page_content=chunk, metadata = {"page":page_no})
+            pages.append(page)    
+    doc.close()
     os.remove("temp/temp.pdf")
+    
     if os.path.exists(f"vectorestore/{store_name}.pkl"):
-        return {"detail":"File already exists"}
+        return {"detail":"vectors already exists"}
     else:
         VectorStore = FAISS.from_documents(pages, embedding=embeddings)
         with open(f"vectorestore/{store_name}.pkl", "wb") as f:
             pickle.dump(VectorStore, f)
-        return {"message": "File uploaded and stored"}
+        return {"message":"sucessfuly vectorize"}
+        
 
-
+ 
 @app.post("/api/generate")
 async def generate_response(data: dict):
     store_name = data["id"]
     with open(f"vectorestore/{store_name}.pkl", "rb") as f:
         VectorStore = pickle.load(f)
     
-    llm = Loadllm.load_llm()
     # llm_forgraph = LLMChain(prompt=graphPrompt, llm=llm)
 
     chain = ConversationalRetrievalChain.from_llm(
-        llm, VectorStore.as_retriever(search_kwargs={"k": 2}), return_source_documents=True,combine_docs_chain_kwargs={"prompt": prompt}
+        llm, VectorStore.as_retriever(search_kwargs={"k": 4}), return_source_documents=True,combine_docs_chain_kwargs={"prompt": prompt}
     )
     query = data["message"]
     result = chain.invoke({"question": query, "chat_history": chat_history})
     pages = [result["source_documents"][0].metadata["page"]+1,result["source_documents"][1].metadata["page"]+1]
     return JSONResponse(content={"message": result["answer"], "pages":pages})
 
+@app.post("/intro")
+async def upload_file(file: UploadFile = File(...), id: str = Form(...)):
+    contents = await file.read()
+    store_name = id;
+    file_path = os.path.join("temp", "temp.pdf")
 
+    with open(file_path, "wb") as f:
+        f.write(contents)
+    
+    doc = fitz.open("temp/temp.pdf")
+    pages=[]
+    for page_no in range(doc.page_count):
+        text = doc[page_no].get_text()
+        text = text_splitter.split_text(text=text)
+        for chunk in text:
+            page = Document(page_content=chunk, metadata = {"page":page_no})
+            pages.append(page)    
+    doc.close()
+    os.remove("temp/temp.pdf")
+    VectorStore = FAISS.from_documents(pages, embedding=embeddings)
+    with open(f"vectorestore/{store_name}.pkl", "wb") as f:
+            pickle.dump(VectorStore, f)
+    info = intro(VectorStore)
+    llmforIntro = LLMChain(prompt=IntroPrompt, llm=llm)
+    introduction = llmforIntro.run(info=info)
+    return {"Intro": introduction}
 
 
 if __name__ == "__main__":

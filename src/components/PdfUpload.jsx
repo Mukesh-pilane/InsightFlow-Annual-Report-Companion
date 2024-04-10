@@ -1,21 +1,21 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { useAuth } from '../context/AuthContext'; // Import your AuthContext hook
-import { ref, uploadBytesResumable } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { storage, db } from '../firebase/firebase.init';
 import { collection, addDoc, doc } from 'firebase/firestore';
 import { useChat } from '../context/ChatContext';
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { intro } from '../utility/llmApi';
+
 const PdfUpload = () => {
   const { user } = useAuth();
   const { addChat, setLoading, loading } = useChat();
+  const [uploadLoading, seUploadLoading] = useState();
   const navigate = useNavigate()
 
-  
 
   const handleFileChange = async (file) => {
-    setLoading(true)
     if (!user) {
       return
     }
@@ -26,7 +26,8 @@ const PdfUpload = () => {
       const chatRef = await addDoc(userChatsRef, {
         chatName: file.name,
       });
-
+      seUploadLoading(true)
+      setLoading(true)
       addChat({
         chatId: chatRef.id,
         chatName: file.name,
@@ -37,24 +38,23 @@ const PdfUpload = () => {
       uploadTask.on(
         'state_changed',
         (snapshot) => {
-          // Handle progress if needed
           const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           console.log(`Upload is ${progress}% done`);
         },
         (error) => {
-          // Handle error
           console.error('Error uploading file:', error.message);
         },
         async () => {
           // Upload complete, but we are not fetching the download URL in this example
           console.log('Upload complete');
+          await intro(file, chatRef.id, user.uid)
+          seUploadLoading(false)  
+          setLoading(false)
+          navigate(`/chat/${chatRef.id}`)
         }
       );
-      navigate(`/chat/${chatRef.id}`)
     } catch (error) {
       console.error('Error uploading file:', error.message);
-    } finally {
-      setLoading(false)
     }
   };
 
@@ -68,12 +68,11 @@ const PdfUpload = () => {
     multiple: false,
     accept: [".pdf"], // Limit accepted file types to PDFs
   });
-
   return (
     <div className="py-4 px-4 border-2 border-blue-600 border-dashed">
       <div {...getRootProps()} className="flex items-center justify-center">
         <input {...getInputProps()} />
-        {!loading ? (
+        {!uploadLoading ? (
           <p className="text-center text-lg">New Chat</p>
         ) : (
           <div className="space-x-2 text-white flex items-center">

@@ -9,6 +9,9 @@ lerna-debug.log*
 
 node_modules
 localllama/vectorestore
+localllama/all-MiniLM-L6-v2
+localllama/__pycache__
+
 dist
 dist-ssr
 *.local

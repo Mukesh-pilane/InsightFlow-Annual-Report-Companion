@@ -20,7 +20,7 @@ import { Link, useLocation } from 'react-router-dom';
 
 const Sidebar = () => {
   const { user, setUser, clearUser } = useAuth(); // Use the useAuth hook
-  const { chats, setChats } = useChat();
+  const { chats, setChats, loading } = useChat();
   const location = useLocation();
   const [isUserMenu, setIsUserMenu] = useState(false)
   const handleUserMenu = () => {
@@ -39,7 +39,11 @@ const Sidebar = () => {
   }, []); // Empty dependency array to run the effect only once
 
   const fetchChats = async () => {
+    console.log(loading);
     if (!user) {
+      return
+    }
+    if(loading){
       return
     }
     try {
@@ -62,7 +66,7 @@ const Sidebar = () => {
   useEffect(() => {
     // Fetch chats when the component mounts
     fetchChats();
-  }, [user]); // Empty dependency array ensures it only runs once on mount
+  }, [user, loading]); // Empty dependency array ensures it only runs once on mount
 
 
   const handleGoogleSignIn = async () => {
