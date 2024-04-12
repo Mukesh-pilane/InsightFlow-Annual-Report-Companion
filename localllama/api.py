@@ -165,7 +165,7 @@ async def generate_response(data: dict):
     )
     query = data["message"]
     result = chain.invoke({"question": query, "chat_history": chat_history})
-    pages = [result["source_documents"][0].metadata["page"]+1,result["source_documents"][1].metadata["page"]+1]
+    pages = [result["source_documents"][0].metadata["page"]+1,result["source_documents"][1].metadata["page"]+1,result["source_documents"][2].metadata["page"]+1,result["source_documents"][3].metadata["page"]+1]
     return JSONResponse(content={"message": result["answer"], "pages":pages})
 
 @app.post("/intro")

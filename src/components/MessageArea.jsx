@@ -16,41 +16,50 @@ const FAQDATA = [
       "Who are the main competitors of the company?",
       "What are the company's key strategic initiatives for growth?",
       "What are the major risks and uncertainties facing the company's operations?",
-      "What are the company's commitments to environmental, social, and governance (ESG) initiatives?"
-    ]
+      "What are the company's commitments to environmental, social, and governance (ESG) initiatives?",
+    ],
   },
   {
     management_communication: [
       "What is the company's outlook for the coming year?",
-      "What are the company's policies on corporate governance and sustainability?",
+      "What are the key highlights from the chairman's message?",
+      "What are the chairman's priorities for the company moving forward?",
+      "Does the chairman acknowledge any financial challenges faced by the company?",
+      "What are the key strategic initiatives or goals outlined by the management in the annual report?",
       "What are the company's key performance indicators (KPIs) for measuring success?",
-      "What are the qualifications and experience of the company's board of directors?",
-      "What are the company's plans for share buybacks or other capital allocation initiatives?",
-      "What are the company's dividends policy and share price performance for the year?"
-    ]
-  }
-  ,
+      "What is the management's approach to corporate governance and ethical practices?",
+      "What risk mitigation strategies or actions has the company implemented to address the identified risks?",
+      "What are the company's dividends policy and share price performance for the year?",
+    ],
+  },
   {
     statutory_reports: [
       "What type of audit opinion was issued on the financial statements (unmodified, modified, scope limitation)?",
-      "What does the audit opinion mean and what limitations does it have?",
+      "What is included in the balance sheet, and what does it indicate about the company's financial position?",
       "What were the 'basis for opinion' and 'key audit matters' (if applicable) identified by the auditor?",
       "Did the auditor identify any significant risks or uncertainties?",
-      "What are the responsibilities of both the company and the auditor regarding the financial statements?"
-    ]
-  }
-  ,
+      "Are there any Key Audit Matters (KAMs) highlighted in the report?",
+    ],
+  },
   {
     financial_statements: [
       "What was the company's revenue and profit for the year?",
+      "What was the company's net profit or loss for the year?",
+      "Is cash cycle rising or falling?",
+      "What is the company's total value of assets according to the annual report?",
+      "Which asset items on the balance sheet are rising or falling?",
+      "Did the company pay dividends to shareholders in fiscal year? If so, how much?",
+      "What is the company's debt-to-equity ratio?",
+      "Does the company have any outstanding loans? If so, what is the total amount?",
+      "What were the company's total expenses for the past year?",
+      "How do the company's expenses compare to its revenue?",
+      "How do the financial statements compare to previous years, and what are the trends or changes observed?",
       "Did the company meet its financial targets outlined in the previous year's report?",
       "What are the main factors that impacted the company's financial performance?",
-      "What are the key risks and uncertainties facing the company's future financial performance?"
-    ]
-  }
-]
-
-const FAQModel = ({ showFAQQuestion, handleShowFAQQuestions, questions, handelSetQuestions, sendMessageToServer }) => {
+    ],
+  },
+];
+const FAQModel = ({ showFAQQuestion, closeFaq,handleShowFAQQuestions, questions, handelSetQuestions, sendMessageToServer }) => {
   return (
     <div>
       <div className=" grid grid-cols-2 gap-2 py-2">
@@ -106,6 +115,7 @@ const FAQModel = ({ showFAQQuestion, handleShowFAQQuestions, questions, handelSe
               <span key={index}
                 onClick={() => {
                   sendMessageToServer(question)
+                  closeFaq()
                 }}
                 className="text-md cursor-pointer">
                 <span className="inline-block items-center mr-1"><IoSend /></span>
@@ -165,6 +175,9 @@ const MessageArea = ({ handlePageNumber }) => {
     messageArea.scrollTop = messageArea.scrollHeight;
   }, [messages, showFAQ, showFAQQuestion, questions]);
 
+  const closeFaq = () => {
+    setShowFAQ(false);
+  }
   const handelSetQuestions = (data) => {
     setQuestions(data)
   }
@@ -279,7 +292,7 @@ const MessageArea = ({ handlePageNumber }) => {
           </div>
         }
         {
-          showFAQ && <FAQModel showFAQQuestion={showFAQQuestion} handleShowFAQQuestions={handleShowFAQQuestions} questions={questions} handelSetQuestions={handelSetQuestions} sendMessageToServer={sendMessageToServer} />
+          showFAQ && <FAQModel showFAQQuestion={showFAQQuestion} handleShowFAQQuestions={handleShowFAQQuestions} questions={questions} handelSetQuestions={handelSetQuestions} sendMessageToServer={sendMessageToServer} closeFaq={closeFaq}/>
         }
 
       </div>
