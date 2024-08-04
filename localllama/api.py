@@ -20,6 +20,9 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from tempfile import gettempdir
 from langchain_core.documents import Document
+from sentence_transformers import CrossEncoder
+
+reranker_model = CrossEncoder(model_name="bge-reranker-base", max_length=512)
 
 app = FastAPI()
 
@@ -82,6 +85,7 @@ text_splitter = RecursiveCharacterTextSplitter(
     length_function=len,
 )
 
+
 def intro(VectorStore):
     keyword = ["About","Financial Performance", "Letter of Ceo","Management Discussion"]
     output=[]
@@ -93,6 +97,12 @@ def intro(VectorStore):
 {output[2]}\n
 {output[3]}\n
 """
+
+
+def rerank_docs(query, retrieved_docs):
+    query_and_docs = [(query, r.page_content) for r in retrieved_docs]
+    scores = reranker_model.predict(query_and_docs)
+    return sorted(list(zip(retrieved_docs, scores)), key=lambda x: x[1], reverse=True)
 
 template = """You are a financial expert with access to the annual report of the company.
 When answering questions about the company's financial performance, prioritize information from the Financial Statements section.Considering the user's question, provide clear and concise answers from given context.
@@ -135,9 +145,10 @@ async def upload_file(data: dict):
     pages=[]
     for page_no in range(doc.page_count):
         text = doc[page_no].get_text()
+        text = re.sub(r"\n", " ", text)
         text = text_splitter.split_text(text=text)
         for chunk in text:
-            page = Document(page_content=chunk, metadata = {"page":page_no})
+            page = Document(page_content=chunk, metadata = {"page":page_no+1})
             pages.append(page)    
     doc.close()
     os.remove("temp/temp.pdf")
@@ -165,13 +176,15 @@ async def generate_response(data: dict):
     )
     query = data["message"]
     result = chain.invoke({"question": query, "chat_history": chat_history})
-    pages = [result["source_documents"][0].metadata["page"]+1,result["source_documents"][1].metadata["page"]+1,result["source_documents"][2].metadata["page"]+1,result["source_documents"][3].metadata["page"]+1]
+    sorDb = FAISS.from_documents(result["source_documents"], embedding=embeddings)
+    doc = sorDb.similarity_search(result['answer'])
+    pages = [doc[0].metadata["page"],doc[1].metadata["page"]]
     return JSONResponse(content={"message": result["answer"], "pages":pages})
 
 @app.post("/intro")
 async def upload_file(file: UploadFile = File(...), id: str = Form(...)):
     contents = await file.read()
-    store_name = id;
+    store_name = id
     file_path = os.path.join("temp", "temp.pdf")
 
     with open(file_path, "wb") as f:

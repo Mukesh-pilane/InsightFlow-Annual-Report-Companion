@@ -7,12 +7,12 @@ from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 class Loadllm:
     @staticmethod
     def load_llm():
-        callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
+        # callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
         # Prepare the LLM
 
         llm = GradientLLM(
             # `ID` listed in `$ gradient model list`
-            model="6fd9d674-c159-418f-98d7-689af2b11715_model_adapter",
+            model="34753ee8-28a7-442a-9b3f-0ce906c66fb9_model_adapter",
             # # optional: set new credentials, they default to environment variables
             # gradient_workspace_id=os.environ["GRADIENT_WORKSPACE_ID"],
             # gradient_access_token=os.environ["GRADIENT_ACCESS_TOKEN"],
