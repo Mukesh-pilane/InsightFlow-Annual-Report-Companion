@@ -7,13 +7,6 @@ import Sidebar from './components/SideBar';
 import Layout from './components/Layout';
 import Home from './components/Home';
 
-const NotFound = () => {
-  return (
-    <div>
-      Not Found
-    </div>
-  )
-}
 
 const App = () => {
 
