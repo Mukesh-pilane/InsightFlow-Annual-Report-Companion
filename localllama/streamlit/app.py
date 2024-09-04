@@ -1,11 +1,10 @@
 import streamlit as st
-from streamlit_pdf_viewer import pdf_viewer
+# from streamlit_pdf_viewer import pdf_viewer
 from dotenv import load_dotenv
 import re
 import fitz
 import time
 from langchain_core.documents import Document
-from streamlit_extras.add_vertical_space import add_vertical_space
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_google_genai import ChatGoogleGenerativeAI
