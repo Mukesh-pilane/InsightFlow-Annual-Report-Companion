@@ -19,6 +19,20 @@ from langchain.retrievers import RePhraseQueryRetriever
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_retrieval_chain
 
+
+from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+
+
+store = {}
+
+
+def get_session_history(session_id: str) -> BaseChatMessageHistory:
+    if session_id not in store:
+        store[session_id] = ChatMessageHistory()
+    return store[session_id]
+
 # Scroll to Top Button with HTML, CSS, and JavaScript
 # scroll_to_top_button = """
 #     <style>
@@ -229,15 +243,23 @@ def main():
 
         rag_chain = create_retrieval_chain(Flash_compression_retriever,question_answer_chain)
         
-        
+        conversational_rag_chain = RunnableWithMessageHistory(
+            rag_chain,
+            get_session_history,
+            input_messages_key="input",
+            history_messages_key="chat_history",
+            output_messages_key="answer",
+        )
+
 
         if query:=st.chat_input("Ask questions about your PDF file:"):
                 st.session_state.messages.append({"role": "user", "content": query})
                 with st.chat_message("user"):
                     st.markdown(query)
                 with st.chat_message("assistant"):
-                    stream = rag_chain.pick("answer").stream({"input": query})
+                    stream = conversational_rag_chain.pick("answer").stream({"input": query}, config={"configurable": {"session_id": "abc123"}})
                     response = st.write_stream(stream)
                     st.session_state.messages.append({"role": "assistant", "content": response})
+                    print(response)
 if __name__ == '__main__':
     main()
